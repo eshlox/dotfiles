@@ -1,0 +1,22 @@
+#!/bin/bash
+DIFF=$(git diff --cached)
+if [ -z "$DIFF" ]; then
+  echo "No staged changes"
+  exit 1
+fi
+
+DIFF_TRUNCATED=$(echo "$DIFF" | head -c 6000)
+
+PROMPT="You are a commit message generator. Analyze the provided git diff and output ONLY the commit message, nothing else. Rules: Use imperative mood. Start with capital letter. No period at end. Max 50 chars. Be specific. Describe WHAT changed. Never use generic words alone. No conventional commit prefixes. Plain English.
+
+Diff:
+$DIFF_TRUNCATED"
+
+curl -s http://127.0.0.1:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d "$(jq -n --arg prompt "$PROMPT" '{
+    model: "qwen2.5-coder",
+    messages: [{role: "user", content: $prompt}],
+    max_tokens: 100,
+    temperature: 0.3
+  }')" | jq -r '.choices[0].message.content' | head -n 1

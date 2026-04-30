@@ -1,0 +1,18 @@
+# Show available global recipes
+default:
+    @just --choose
+
+# Open lazygit in the current directory
+lazygit:
+    lazygit
+
+# Open Helix in the current directory (args forwarded to hx)
+hx *args:
+    hx {{args}}
+
+# Alias: `just helix` instead of `just hx`
+helix *args: (hx args)
+
+# Open Yazi (file manager)
+yazi:
+    yazi

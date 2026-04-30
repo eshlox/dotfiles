@@ -1,0 +1,127 @@
+# Set history size to 1 million commands
+HISTSIZE=1000000
+SAVEHIST=1000000
+
+# Ignore duplicate commands
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+
+# Include a timestamp in the history file
+setopt EXTENDED_HISTORY
+
+source <(fzf --zsh)
+
+autoload -Uz compinit
+compinit
+
+autoload -U promptinit; promptinit
+prompt pure
+
+export PATH="$HOME/.local/bin:$PATH"
+export XDG_CONFIG_HOME="$HOME/.config"
+
+export EDITOR="hx"
+export VISUAL="hx"
+
+t() { tmux new-window -n "${1:-shell}"; }
+ts() { tmux new-session -A -s "${1:-main}"; }
+
+if command -v tmux &>/dev/null && [ -z "$TMUX" ]; then
+  tmux new-session -A -s main
+fi
+
+# Claude-style just wrapper: tmux window naming + global fallback + merged --choose
+# Project justfiles stay untouched; teammates without this function get plain `just`.
+just() {
+  local global_justfile="${XDG_CONFIG_HOME:-$HOME/.config}/just/justfile"
+
+  # Is there a project justfile at/above $PWD?
+  local in_project=0
+  command just --show default &>/dev/null && in_project=1
+  # Fallback probe: `just --show` returns non-zero when no recipe named "default" exists
+  # but the justfile itself is fine. Use --summary which works as long as a justfile is found.
+  if (( ! in_project )); then
+    command just --summary &>/dev/null && in_project=1
+  fi
+
+  # --choose: merged fuzzy picker
+  if [[ "$1" == "--choose" ]]; then
+    local chooser="${JUST_CHOOSER:-fzf --ansi}"
+    local project_list="" global_list="" selected
+
+    if (( in_project )); then
+      project_list=$(command just --summary 2>/dev/null | tr ' ' '\n' | grep -v '^$')
+    fi
+    if [[ -f "$global_justfile" ]]; then
+      global_list=$(command just -g --summary 2>/dev/null | tr ' ' '\n' | grep -v '^$')
+    fi
+
+    # Dedupe: project wins when names collide; dim prefix marks globals
+    selected=$(
+      {
+        [[ -n "$project_list" ]] && while IFS= read -r r; do
+          printf '  %s\n' "$r"
+        done <<< "$project_list"
+        while IFS= read -r r; do
+          [[ -z "$r" ]] && continue
+          if [[ -z "$project_list" ]] || ! echo "$project_list" | grep -qxF "$r"; then
+            printf '\033[2m∘\033[0m %s\n' "$r"
+          fi
+        done <<< "$global_list"
+      } | eval "$chooser" | awk '{print $NF}'
+    ) || return
+    [[ -z "$selected" ]] && return
+
+    just "$selected"
+    return
+  fi
+
+  # First non-flag argument = recipe name
+  local recipe=""
+  for arg in "$@"; do
+    [[ "$arg" == -* ]] && continue
+    recipe="$arg"
+    break
+  done
+
+  # --list / -l: project (if any) + globals
+  if [[ "$1" == "--list" || "$1" == "-l" ]]; then
+    if (( in_project )); then
+      command just "$@"
+    fi
+    if [[ -f "$global_justfile" ]] && command just -g --list &>/dev/null; then
+      (( in_project )) && echo ""
+      echo "Global recipes:"
+      command just -g "$@"
+    fi
+    return
+  fi
+
+  # Bare `just` with no args outside a project: show globals instead of erroring
+  if [[ $# -eq 0 ]] && (( ! in_project )) && [[ -f "$global_justfile" ]]; then
+    command just -g
+    return
+  fi
+
+  # If recipe is missing from the project (or no project exists) but exists globally, delegate
+  local -a prefix=(command just)
+  if [[ -n "$recipe" ]] \
+    && [[ -f "$global_justfile" ]] \
+    && ! command just --show "$recipe" &>/dev/null \
+    && command just --justfile "$global_justfile" --show "$recipe" &>/dev/null; then
+    prefix=(command just --justfile "$global_justfile" --working-directory "$PWD")
+  fi
+
+  # tmux window naming
+  if [[ -n "$TMUX" ]] && [[ -n "$recipe" ]]; then
+    tmux rename-window "$recipe"
+    "${prefix[@]}" "$@"
+    local exit_code=$?
+    tmux rename-window "zsh"
+    return $exit_code
+  fi
+
+  "${prefix[@]}" "$@"
+}
+
+alias j="just --choose"

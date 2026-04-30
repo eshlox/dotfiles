@@ -1,0 +1,24 @@
+{{- if not .name -}}
+{{ fail "missing .name in chezmoi data — run: chezmoi edit-config" }}
+{{- end -}}
+{{- if not .email -}}
+{{ fail "missing .email in chezmoi data — run: chezmoi edit-config" }}
+{{- end -}}
+[user]
+	name = {{ .name | quote }}
+	email = {{ .email | quote }}
+{{- if .signingKey }}
+	signingkey = {{ .signingKey | quote }}
+{{- end }}
+[commit]
+	gpgsign = {{ if .signingKey }}true{{ else }}false{{ end }}
+[init]
+	defaultBranch = main
+[pull]
+	rebase = true
+[tag]
+	gpgsign = {{ if .signingKey }}true{{ else }}false{{ end }}
+[core]
+	editor = hx
+[gpg]
+	format = openpgp

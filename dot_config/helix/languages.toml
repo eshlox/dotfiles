@@ -1,0 +1,31 @@
+# TypeScript
+[[language]]
+name = "typescript"
+auto-format = true
+formatter = { command = "prettier", args = ["--parser", "typescript"] }
+
+[[language]]
+name = "tsx"
+auto-format = true
+formatter = { command = "prettier", args = ["--parser", "typescript"] }
+
+[[language]]
+name = "javascript"
+auto-format = true
+formatter = { command = "prettier", args = ["--parser", "babel"] }
+
+[[language]]
+name = "jsx"
+auto-format = true
+formatter = { command = "prettier", args = ["--parser", "babel"] }
+
+# Rust
+[[language]]
+name = "rust"
+auto-format = true
+
+# Python
+[[language]]
+name = "python"
+auto-format = true
+formatter = { command = "black", args = ["-"] }
