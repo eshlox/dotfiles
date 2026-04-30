@@ -11,13 +11,17 @@
 	signingkey = {{ .signingKey | quote }}
 {{- end }}
 [commit]
-	gpgsign = {{ if .signingKey }}true{{ else }}false{{ end }}
+{{- if .signingKey }}
+	gpgsign = true
+{{- end }}
 [init]
 	defaultBranch = main
 [pull]
 	rebase = true
 [tag]
-	gpgsign = {{ if .signingKey }}true{{ else }}false{{ end }}
+{{- if .signingKey }}
+	gpgsign = true
+{{- end }}
 [core]
 	editor = hx
 [gpg]
