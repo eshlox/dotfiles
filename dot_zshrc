@@ -10,12 +10,10 @@ setopt HIST_IGNORE_ALL_DUPS
 setopt EXTENDED_HISTORY
 
 source <(fzf --zsh)
+eval "$(starship init zsh)"
 
 autoload -Uz compinit
 compinit
-
-autoload -U promptinit; promptinit
-prompt pure
 
 export PATH="$HOME/.local/bin:$PATH"
 export XDG_CONFIG_HOME="$HOME/.config"
