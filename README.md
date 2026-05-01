@@ -49,13 +49,19 @@ This opens `~/.config/chezmoi/chezmoi.toml` (outside the repo). Add:
 [data]
 name       = "Your Name"
 email      = "you@example.com"
+role       = "vm"                 # optional — set on Lima VMs; omit on host
 signingKey = "ABCDEF1234567890"  # optional — omit if no GPG signing on this VM
 ```
 
 - `name` and `email` are **required**. Missing either causes `chezmoi apply` to
   fail with a descriptive error.
-- `signingKey` is optional. When omitted, `gpgsign` is set to `false` in the
-  rendered git config and no `signingkey` entry is written.
+- `role = "vm"` — set this on Lima VMs. It adds `/usr/sbin` and `/sbin` to
+  `PATH` in `.zshrc` so Lima's port-forwarding (`iptables`) and file-sharing
+  (`mount.fuse3`) helpers are discoverable. Lima may inject this block itself;
+  owning it via chezmoi prevents it from being treated as an unmanaged mutation.
+  Omit `role` (or set any other value) on the host — the block is not written.
+- `signingKey` is optional. When omitted, `gpgsign` and `signingkey` are not
+  written to the git config.
 
 ### What the template produces
 
@@ -161,5 +167,6 @@ chezmoi edit-config             # edit ~/.config/chezmoi/chezmoi.toml
 
 | Source file                                    | Deploys to                              |
 | ---------------------------------------------- | --------------------------------------- |
+| `dot_zshrc.tmpl`                               | `~/.zshrc`                              |
 | `dot_config/git/common.gitconfig.tmpl`         | `~/.config/git/common.gitconfig`        |
 | `dot_gitconfig`                                | `~/.gitconfig`                          |
