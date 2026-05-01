@@ -24,8 +24,9 @@ export VISUAL="hx"
 t() { tmux new-window -n "${1:-shell}"; }
 ts() { tmux new-session -A -s "${1:-main}"; }
 
-if command -v tmux &>/dev/null && [ -z "$TMUX" ]; then
-  tmux new-session -A -s main
+# Auto-attach tmux on SSH (Lima `lima shell` counts as SSH) so it acts as the default shell
+if command -v tmux &>/dev/null && [ -z "$TMUX" ] && [ -n "$SSH_CONNECTION" ]; then
+  exec tmux new-session -A -s main
 fi
 
 # Claude-style just wrapper: tmux window naming + global fallback + merged --choose
