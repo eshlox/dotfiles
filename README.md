@@ -3,9 +3,9 @@
 Managed with [chezmoi](https://www.chezmoi.io/). Source tree maps to `$HOME`
 via chezmoi's `dot_` prefix convention. Fedora-only — no OS templating.
 
-Identity (name, email, GPG signing key) is **never stored in this repo**.
-It lives in each VM's local chezmoi config (`~/.config/chezmoi/chezmoi.toml`),
-outside the source tree.
+Identity (name, email) is **never stored in this repo**. It lives in each
+VM's local chezmoi config (`~/.config/chezmoi/chezmoi.toml`), outside the
+source tree.
 
 ## First-time setup on a fresh Fedora VM
 
@@ -47,10 +47,9 @@ This opens `~/.config/chezmoi/chezmoi.toml` (outside the repo). Add:
 
 ```toml
 [data]
-name       = "Your Name"
-email      = "you@example.com"
-role       = "vm"                 # optional — set on Lima VMs; omit on host
-signingKey = "ABCDEF1234567890"  # optional — omit if no GPG signing on this VM
+name  = "Your Name"
+email = "you@example.com"
+role  = "vm"               # optional — set on Lima VMs; omit on host
 ```
 
 - `name` and `email` are **required**. Missing either causes `chezmoi apply` to
@@ -60,31 +59,6 @@ signingKey = "ABCDEF1234567890"  # optional — omit if no GPG signing on this V
   (`mount.fuse3`) helpers are discoverable. Lima may inject this block itself;
   owning it via chezmoi prevents it from being treated as an unmanaged mutation.
   Omit `role` (or set any other value) on the host — the block is not written.
-- `signingKey` is optional. When omitted, `gpgsign` and `signingkey` are not
-  written to the git config.
-
-### What the template produces
-
-With `signingKey` set:
-
-```ini
-[user]
-    name       = "Your Name"
-    email      = "you@example.com"
-    signingkey = "ABCDEF1234567890"
-[commit]
-    gpgsign = true
-```
-
-Without `signingKey`:
-
-```ini
-[user]
-    name  = "Your Name"
-    email = "you@example.com"
-[commit]
-    gpgsign = false
-```
 
 ### Verify rendered output before applying
 
@@ -92,21 +66,11 @@ Without `signingKey`:
 chezmoi execute-template < ~/.local/share/chezmoi/dot_config/git/common.gitconfig.tmpl
 ```
 
-### Per-VM GPG signing key (DVM workflow)
-
-Generate a GPG key via DVM, then copy the fingerprint into the local config:
-
-```bash
-dvm gpg-key app
-gpg --list-secret-keys --keyid-format=long
-chezmoi edit-config   # add signingKey = "FINGERPRINT" under [data]
-chezmoi apply
-```
-
 ### What does NOT belong in this repo
 
-- Real name, email, GPG signing key fingerprint
+- Real name, email
 - SSH private keys or authorized_keys
+- GPG keys or signing fingerprints
 - API keys, tokens, passwords
 - Machine-specific paths
 
