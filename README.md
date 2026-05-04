@@ -47,9 +47,11 @@ This opens `~/.config/chezmoi/chezmoi.toml` (outside the repo). Add:
 
 ```toml
 [data]
-name  = "Your Name"
-email = "you@example.com"
-role  = "vm"               # optional — set on Lima VMs; omit on host
+name          = "Your Name"
+email         = "you@example.com"
+role          = "vm"                       # optional — set on Lima VMs; omit on host
+sshAuthKey    = "~/.ssh/id_deploy"         # optional — PRIVATE key for git SSH transport
+sshSigningKey = "~/.ssh/id_signing.pub"    # optional — PUBLIC key for commit/tag signing
 ```
 
 - `name` and `email` are **required**. Missing either causes `chezmoi apply` to
@@ -59,6 +61,56 @@ role  = "vm"               # optional — set on Lima VMs; omit on host
   (`mount.fuse3`) helpers are discoverable. Lima may inject this block itself;
   owning it via chezmoi prevents it from being treated as an unmanaged mutation.
   Omit `role` (or set any other value) on the host — the block is not written.
+- `sshAuthKey` — path to the **private** key git uses for SSH transport
+  (clone/fetch/push). Wired into `core.sshCommand` with `IdentitiesOnly=yes`
+  so ssh-agent never offers the wrong key. Defaults to `~/.ssh/id_ed25519`.
+- `sshSigningKey` — path to the **public** key used to sign commits and tags.
+  Defaults to `~/.ssh/id_ed25519.pub`. Can be the same key as `sshAuthKey`
+  (just append `.pub`) or a completely separate key — both are supported.
+
+## SSH keys for git (auth + signing)
+
+Two independent SSH keys per VM:
+
+| Purpose         | chezmoi data field | Wired into git via               | Key half used |
+| --------------- | ------------------ | -------------------------------- | ------------- |
+| Push/fetch auth | `sshAuthKey`       | `core.sshCommand = ssh -i …`     | private       |
+| Commit signing  | `sshSigningKey`    | `user.signingkey` + `gpg.format` | public        |
+
+You can use one key for both (just point `sshSigningKey` at `<sshAuthKey>.pub`)
+or two completely separate keys. Requires git ≥ 2.34 for SSH signing.
+
+### One-time setup per VM
+
+1. **Generate keys** (one or two, your choice):
+   ```bash
+   ssh-keygen -t ed25519 -f ~/.ssh/id_deploy  -C "deploy: you@example.com"
+   ssh-keygen -t ed25519 -f ~/.ssh/id_signing -C "signing: you@example.com"
+   ```
+
+2. **Register on GitHub**:
+   - `id_deploy.pub` → **Authentication key** (Settings → SSH and GPG keys)
+   - `id_signing.pub` → **Signing key** (same page, separate entry — GitHub
+     treats auth and signing as distinct purposes even for the same key bytes)
+
+3. **Populate the local allowed-signers file** so `git log --show-signature`
+   verifies your own commits locally:
+   ```bash
+   echo "you@example.com $(cat ~/.ssh/id_signing.pub)" >> ~/.ssh/allowed_signers
+   ```
+
+4. **Point chezmoi at the keys**:
+   ```bash
+   chezmoi edit-config   # set sshAuthKey and sshSigningKey under [data]
+   chezmoi apply
+   ```
+
+5. **Verify auth and signing**:
+   ```bash
+   ssh -T git@github.com                    # uses sshAuthKey via core.sshCommand
+   git commit --allow-empty -m "test sig"
+   git log --show-signature -1              # checked against allowed_signers
+   ```
 
 ### Verify rendered output before applying
 
@@ -69,8 +121,8 @@ chezmoi execute-template < ~/.local/share/chezmoi/dot_config/git/common.gitconfi
 ### What does NOT belong in this repo
 
 - Real name, email
-- SSH private keys or authorized_keys
-- GPG keys or signing fingerprints
+- SSH private keys, public keys, or `authorized_keys`
+- `~/.ssh/allowed_signers` (contains your email + public key)
 - API keys, tokens, passwords
 - Machine-specific paths
 
