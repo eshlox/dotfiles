@@ -4,12 +4,22 @@
 {{- if not .email -}}
 {{ fail "missing .email in chezmoi data — run: chezmoi edit-config" }}
 {{- end -}}
-{{- $authKey    := .sshAuthKey    | default "~/.ssh/id_ed25519"     -}}
-{{- $signingKey := .sshSigningKey | default "~/.ssh/id_ed25519.pub" -}}
 [user]
 	name = {{ .name | quote }}
 	email = {{ .email | quote }}
-	signingkey = {{ $signingKey | quote }}
+{{- if .signingKey }}
+	signingkey = {{ .signingKey | quote }}
+{{- end }}
+[core]
+	editor = hx
+{{- if .deployKey }}
+	sshCommand = ssh -i '{{ .deployKey | trimSuffix ".pub" }}' -o IdentitiesOnly=yes
+{{- end }}
+[init]
+	defaultBranch = main
+[pull]
+	rebase = true
+{{- if .signingKey }}
 [gpg]
 	format = ssh
 [gpg "ssh"]
@@ -18,10 +28,4 @@
 	gpgsign = true
 [tag]
 	gpgsign = true
-[core]
-	editor = hx
-	sshCommand = ssh -i '{{ $authKey }}' -o IdentitiesOnly=yes
-[init]
-	defaultBranch = main
-[pull]
-	rebase = true
+{{- end }}

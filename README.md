@@ -47,11 +47,11 @@ This opens `~/.config/chezmoi/chezmoi.toml` (outside the repo). Add:
 
 ```toml
 [data]
-name          = "Your Name"
-email         = "you@example.com"
-role          = "vm"                       # optional — set on Lima VMs; omit on host
-sshAuthKey    = "~/.ssh/id_deploy"         # optional — PRIVATE key for git SSH transport
-sshSigningKey = "~/.ssh/id_signing.pub"    # optional — PUBLIC key for commit/tag signing
+name       = "Your Name"
+email      = "you@example.com"
+role       = "vm"                                  # optional — set on Lima VMs; omit on host
+deployKey  = "~/.ssh/id_ed25519_dvm.pub"           # optional — .pub path; stripped for `ssh -i`
+signingKey = "~/.ssh/id_ed25519_dvm_signing.pub"   # optional — .pub path used by git signing
 ```
 
 - `name` and `email` are **required**. Missing either causes `chezmoi apply` to
@@ -61,53 +61,67 @@ sshSigningKey = "~/.ssh/id_signing.pub"    # optional — PUBLIC key for commit/
   (`mount.fuse3`) helpers are discoverable. Lima may inject this block itself;
   owning it via chezmoi prevents it from being treated as an unmanaged mutation.
   Omit `role` (or set any other value) on the host — the block is not written.
-- `sshAuthKey` — path to the **private** key git uses for SSH transport
-  (clone/fetch/push). Wired into `core.sshCommand` with `IdentitiesOnly=yes`
-  so ssh-agent never offers the wrong key. Defaults to `~/.ssh/id_ed25519`.
-- `sshSigningKey` — path to the **public** key used to sign commits and tags.
-  Defaults to `~/.ssh/id_ed25519.pub`. Can be the same key as `sshAuthKey`
-  (just append `.pub`) or a completely separate key — both are supported.
+- `deployKey` — **optional**. Pass the `.pub` path; the template strips `.pub`
+  and wires the private key into `core.sshCommand` with `IdentitiesOnly=yes`,
+  so git's SSH transport always uses exactly that key (ssh-agent won't offer
+  others). Omit it and git falls back to default SSH behavior.
+- `signingKey` — **optional**. Pass the `.pub` path; goes into
+  `user.signingkey` and enables `[gpg] format = ssh`, plus `gpgsign = true`
+  for commits and tags. Omit it and signing is fully disabled — no `[gpg]`,
+  `[commit]`, or `[tag]` sections are written.
 
-## SSH keys for git (auth + signing)
+All four combinations work cleanly:
 
-Two independent SSH keys per VM:
+| `deployKey` | `signingKey` | Result                                          |
+| ----------- | ------------ | ----------------------------------------------- |
+| set         | set          | pinned SSH key for transport + SSH signing on   |
+| set         | unset        | pinned SSH key, no signing                      |
+| unset       | set          | default SSH (agent / `~/.ssh/config`) + signing |
+| unset       | unset        | plain git config, no SSH or signing tweaks      |
 
-| Purpose         | chezmoi data field | Wired into git via               | Key half used |
-| --------------- | ------------------ | -------------------------------- | ------------- |
-| Push/fetch auth | `sshAuthKey`       | `core.sshCommand = ssh -i …`     | private       |
-| Commit signing  | `sshSigningKey`    | `user.signingkey` + `gpg.format` | public        |
+## SSH keys for git (deploy + signing)
 
-You can use one key for both (just point `sshSigningKey` at `<sshAuthKey>.pub`)
-or two completely separate keys. Requires git ≥ 2.34 for SSH signing.
+Two independent SSH keys per VM, both optional. You always pass the `.pub`
+path in chezmoi data — the template handles the public/private distinction:
+
+| Purpose         | chezmoi data field | Wired into git via               | What template does          |
+| --------------- | ------------------ | -------------------------------- | --------------------------- |
+| Push/fetch auth | `deployKey`        | `core.sshCommand = ssh -i …`     | strips `.pub` for `ssh -i`  |
+| Commit signing  | `signingKey`       | `user.signingkey` + `gpg.format` | uses `.pub` path as-is      |
+
+Use one key for both (point both fields at the same `.pub`) or two completely
+separate keys. Requires git ≥ 2.34 for SSH signing.
 
 ### One-time setup per VM
 
 1. **Generate keys** (one or two, your choice):
    ```bash
-   ssh-keygen -t ed25519 -f ~/.ssh/id_deploy  -C "deploy: you@example.com"
-   ssh-keygen -t ed25519 -f ~/.ssh/id_signing -C "signing: you@example.com"
+   ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_dvm         -C "deploy: you@example.com"
+   ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_dvm_signing -C "signing: you@example.com"
    ```
 
 2. **Register on GitHub**:
-   - `id_deploy.pub` → **Authentication key** (Settings → SSH and GPG keys)
-   - `id_signing.pub` → **Signing key** (same page, separate entry — GitHub
-     treats auth and signing as distinct purposes even for the same key bytes)
+   - `id_ed25519_dvm.pub` → **Authentication key** (Settings → SSH and GPG keys)
+   - `id_ed25519_dvm_signing.pub` → **Signing key** (same page, separate entry —
+     GitHub treats auth and signing as distinct purposes even for the same key
+     bytes)
 
 3. **Populate the local allowed-signers file** so `git log --show-signature`
    verifies your own commits locally:
    ```bash
-   echo "you@example.com $(cat ~/.ssh/id_signing.pub)" >> ~/.ssh/allowed_signers
+   echo "you@example.com $(cat ~/.ssh/id_ed25519_dvm_signing.pub)" \
+     >> ~/.ssh/allowed_signers
    ```
 
 4. **Point chezmoi at the keys**:
    ```bash
-   chezmoi edit-config   # set sshAuthKey and sshSigningKey under [data]
+   chezmoi edit-config   # set deployKey and/or signingKey under [data]
    chezmoi apply
    ```
 
-5. **Verify auth and signing**:
+5. **Verify**:
    ```bash
-   ssh -T git@github.com                    # uses sshAuthKey via core.sshCommand
+   ssh -T git@github.com                    # uses deployKey via core.sshCommand
    git commit --allow-empty -m "test sig"
    git log --show-signature -1              # checked against allowed_signers
    ```
