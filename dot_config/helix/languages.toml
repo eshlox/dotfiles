@@ -1,4 +1,6 @@
-# TypeScript
+# Helix doesn't ship default formatters for these — define them here.
+# (Rust uses rust-analyzer's built-in formatter by default; no entry needed.)
+
 [[language]]
 name = "typescript"
 auto-format = true
@@ -19,12 +21,6 @@ name = "jsx"
 auto-format = true
 formatter = { command = "prettier", args = ["--parser", "babel"] }
 
-# Rust
-[[language]]
-name = "rust"
-auto-format = true
-
-# Python
 [[language]]
 name = "python"
 auto-format = true

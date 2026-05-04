@@ -1,36 +1,61 @@
-# Dotfiles (Fedora VM)
+# Dotfiles
 
 Managed with [chezmoi](https://www.chezmoi.io/). Source tree maps to `$HOME`
-via chezmoi's `dot_` prefix convention. Fedora-only — no OS templating.
+via chezmoi's `dot_` prefix convention.
+
+Two deployment profiles, selected by the chezmoi data field `role`:
+
+| `role`        | Where         | What gets applied                            |
+| ------------- | ------------- | -------------------------------------------- |
+| `"vm"`        | Fedora VM     | everything **except** `.config/ghostty`      |
+| unset         | macOS host    | **only** `.config/ghostty`                   |
+
+The split exists because Ghostty (the terminal) runs on the host, while every
+other tool (zsh, tmux, helix, lazygit, etc.) runs inside the VM. The selection
+is implemented in `.chezmoiignore` as a template.
 
 Identity (name, email) is **never stored in this repo**. It lives in each
-VM's local chezmoi config (`~/.config/chezmoi/chezmoi.toml`), outside the
+machine's local chezmoi config (`~/.config/chezmoi/chezmoi.toml`), outside the
 source tree.
 
 ## First-time setup on a fresh Fedora VM
 
 ```bash
 # 1. Install required packages
-sudo dnf install -y zsh tmux helix lazygit fzf git-delta jq just yazi chezmoi
+sudo dnf install -y zsh tmux helix lazygit fzf git-delta jq just yazi \
+                    chezmoi starship bat
+# `ghostty` is the terminal — install it from your host package manager
+# (https://ghostty.org/) since it runs outside the VM.
 
-# 2. Pure prompt (zsh)
-mkdir -p ~/.zsh && git clone https://github.com/sindresorhus/pure.git ~/.zsh/pure
-echo 'fpath+=$HOME/.zsh/pure' >> ~/.zshenv
-
-# 3. tmux catppuccin plugin (referenced from tmux.conf)
-git clone https://github.com/catppuccin/tmux.git \
-  ~/.config/tmux/plugins/catppuccin/tmux
-
-# 4. Pull dotfiles into chezmoi's source dir
+# 2. Pull dotfiles into chezmoi's source dir
 chezmoi init https://github.com/<user>/dotfiles.git
 
-# 5. Set local identity (required — see section below)
+# 3. Set local identity (required — see section below)
 chezmoi edit-config
 
-# 6. Preview, then apply
+# 4. Preview, then apply
 chezmoi diff
 chezmoi apply
 ```
+
+## First-time setup on the macOS host (Ghostty only)
+
+```bash
+# 1. Install Ghostty + a Nerd Font
+brew install --cask ghostty font-jetbrains-mono-nerd-font
+
+# 2. Install chezmoi
+brew install chezmoi
+
+# 3. Pull the same repo (no role data — host profile is the default)
+chezmoi init https://github.com/<user>/dotfiles.git
+chezmoi diff
+chezmoi apply
+```
+
+`role` is left unset on the host, so `.chezmoiignore` ignores everything except
+`.config/ghostty/config`. Updates to Ghostty config are managed via the same
+repo as the VM dotfiles — single source of truth.
 
 ## Identity & private data (chezmoi templates)
 
@@ -182,13 +207,17 @@ chezmoi edit-config             # edit ~/.config/chezmoi/chezmoi.toml
 | -------------------------------------- | ------------------------------------------------ |
 | `.zshrc`                               | shell config + `just` wrapper                    |
 | `.gitconfig`                           | includes common + local                          |
+| `.gitignore_global`                    | OS / editor junk ignored everywhere              |
 | `.config/git/common.gitconfig`         | shared git settings rendered from template       |
 | `.config/git/local.gitconfig`          | per-VM extras (NOT tracked, optional)            |
+| `.config/ghostty/config`               | terminal — owns the color palette for everything |
 | `.config/helix/config.toml`            | Helix editor                                     |
 | `.config/helix/languages.toml`         | per-language formatters                          |
-| `.config/just/justfile`                | global recipes (lazygit/hx/helix/yazi)           |
+| `.config/just/justfile`                | global recipes (lazygit/hx/yazi)                 |
 | `.config/lazygit/config.yml`           | lazygit + AI-commit keybinding (`G`)             |
 | `.config/tmux/tmux.conf`               | tmux                                             |
+| `.config/bat/config`                   | bat (better cat) — light theme                   |
+| `.config/starship.toml`                | starship prompt — minimal preset                 |
 | `.local/bin/ai-commit`                 | local LLM commit-message generator               |
 
 `ai-commit` expects a local `llama-server` running on `127.0.0.1:8080`.

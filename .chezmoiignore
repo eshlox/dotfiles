@@ -1,0 +1,25 @@
+{{/*
+  chezmoi exclusion list. Processed as a template; patterns match destination
+  paths (the rendered ~/relative path), NOT source paths.
+
+  Two deployment profiles:
+  - role = "vm"  → everything EXCEPT Ghostty (Ghostty runs on the host)
+  - no role      → ONLY Ghostty (host-only minimal install on macOS)
+*/}}
+{{- if eq .role "vm" }}
+# Ghostty terminal lives on the macOS host; the VM has no Ghostty to configure.
+.config/ghostty
+{{ else }}
+# Host (macOS) profile — Ghostty is the only thing managed here.
+.zshrc
+.gitconfig
+.gitignore_global
+.local
+.config/bat
+.config/git
+.config/helix
+.config/just
+.config/lazygit
+.config/starship.toml
+.config/tmux
+{{- end }}

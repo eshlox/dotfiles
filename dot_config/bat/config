@@ -1,0 +1,13 @@
+# bat (better cat) — config applies whenever you actually install/use it.
+# Bat reads this file from $XDG_CONFIG_HOME/bat/config automatically.
+
+# Light syntax theme — matches the delta/git theme for visual consistency.
+# To list alternatives:  bat --list-themes
+--theme="GitHub"
+
+# Show line numbers + git change markers + the file header, but not the
+# fancy unicode grid (which doubles vertical space). Defaults are noisier.
+--style="numbers,changes,header"
+
+# Always use colors, even when piping (otherwise bat strips them).
+--paging=auto

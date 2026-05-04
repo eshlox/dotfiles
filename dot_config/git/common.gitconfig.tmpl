@@ -1,25 +1,84 @@
+{{- /*
+  Philosophy: keep git defaults, only override when there's a clear reason.
+  Templated via chezmoi — values come from `chezmoi edit-config`.
+*/ -}}
 {{- if not .name -}}
 {{ fail "missing .name in chezmoi data — run: chezmoi edit-config" }}
 {{- end -}}
 {{- if not .email -}}
 {{ fail "missing .email in chezmoi data — run: chezmoi edit-config" }}
 {{- end -}}
+
+# Identity (required — no default exists)
 [user]
 	name = {{ .name | quote }}
 	email = {{ .email | quote }}
 {{- if .signingKey }}
 	signingkey = {{ .signingKey | quote }}
 {{- end }}
+
 [core]
+	# Use Helix even where $EDITOR isn't set (GUI clients, cron, etc.)
 	editor = hx
+	# Global ignore for OS / editor junk (~/.gitignore_global is in dotfiles)
+	excludesfile = ~/.gitignore_global
+	# Page diffs through delta for syntax highlighting + side-by-side
+	pager = delta
 {{- if .deployKey }}
+	# Force a specific SSH key for git remotes (deploy-key workflow)
 	sshCommand = ssh -i '{{ .deployKey | trimSuffix ".pub" }}' -o IdentitiesOnly=yes
 {{- end }}
+
+# default branch (default "master" + a hint to change it)
 [init]
 	defaultBranch = main
+
+# Pull = fetch + rebase (default is merge — produces noisier history)
 [pull]
 	rebase = true
+
+# Auto-prune deleted upstream branches on every fetch (default keeps stale refs)
+[fetch]
+	prune = true
+
+# Sort `git branch` by most recent commit, not alphabetically
+[branch]
+	sort = -committerdate
+
+# Sort `git tag` by version (1.10 > 1.9), not alphabetically (1.10 < 1.9)
+[tag]
+	sort = version:refname
+
+# zdiff3 conflict markers show the common ancestor — much easier to resolve
+# than the default "merge" style which only shows ours/theirs.
+[merge]
+	conflictStyle = zdiff3
+
+# Remember conflict resolutions; reapply them automatically next time.
+[rerere]
+	enabled = true
+
+# Column-wrap output of `git branch` / `git tag` etc. when the terminal is wide.
+[column]
+	ui = auto
+
+# Histogram diff produces cleaner diffs for refactors than the default Myers.
+[diff]
+	algorithm = histogram
+
+# Delta — pretty diff viewer (used as `core.pager` and by `git diff`).
+[delta]
+	light            = true            # use light-friendly syntax theme
+	side-by-side     = true            # show old/new in two columns
+	line-numbers     = true
+	syntax-theme     = GitHub          # readable on a light background
+	navigate         = true            # n / N to jump between files in the pager
+
+[interactive]
+	diffFilter = delta --color-only    # delta in `git add -p` etc.
 {{- if .signingKey }}
+
+# SSH commit/tag signing — uses the same key as `signingkey` above
 [gpg]
 	format = ssh
 [gpg "ssh"]

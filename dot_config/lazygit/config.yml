@@ -1,36 +1,18 @@
+# Philosophy: keep lazygit defaults, only add what's missing or fix preferences.
+
 git:
-  autoFetch: false
-  pagers:
+  autoFetch: false                       # default true — disable the 60s background fetch
+  pagers:                                # default cat — use delta for side-by-side colored diffs
     - colorArg: always
       pager: delta --light --paging=never --side-by-side
+
 gui:
   theme:
-    lightTheme: true
-    activeBorderColor:
-      - '#1e66f5' # Blue
-      - bold
-    inactiveBorderColor:
-      - '#9ca0b0' # Overlay0
-    optionsTextColor:
-      - '#1e66f5' # Blue
-    selectedLineBgColor:
-      - '#ccd0da' # Surface0
-    selectedRangeBgColor:
-      - '#ccd0da' # Surface0
-    cherryPickedCommitBgColor:
-      - '#bcc0cc' # Surface1
-    cherryPickedCommitFgColor:
-      - '#1e66f5' # Blue
-    unstagedChangesColor:
-      - '#d20f39' # Red
-    defaultFgColor:
-      - '#4c4f69' # Text
-    searchingActiveBorderColor:
-      - '#df8e1d' # Yellow
-os:
-  shell: "zsh"
-  shellArg: "-c"
+    lightTheme: true                     # default false (dark) — use lazygit's built-in light theme
+
 customCommands:
+  # `G` in the files view: generate a commit message via the local LLM
+  # (see ~/.local/bin/ai-commit), then open $EDITOR pre-filled to review/edit/save.
   - key: "G"
     description: "AI commit message"
     context: "files"

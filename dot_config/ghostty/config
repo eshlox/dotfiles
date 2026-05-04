@@ -1,0 +1,26 @@
+# Ghostty terminal config.
+# This file defines the foundational palette: every TUI inside the terminal
+# (Helix, lazygit, tmux, fzf, delta, bat) inherits the 16 ANSI colors set here.
+# Theme everything ONCE here, leave other tools on defaults.
+
+# Everforest Light Soft — warm, low-contrast, designed for long sessions.
+# To browse alternatives:  ghostty +list-themes | grep -i light
+theme = Everforest Light - Soft
+
+# Font — adjust family/size to taste; these are sane defaults.
+font-family = JetBrainsMono Nerd Font
+font-size   = 14
+
+# Don't beep / flash on bell
+audible-bell = false
+visual-bell  = false
+
+# Hide the macOS title bar; tmux/starship already show context
+window-decoration = false
+
+# Padding around the content; easier on the eyes than flush edges
+window-padding-x = 8
+window-padding-y = 8
+
+# Enable shell integration features (cwd inheritance, prompt marks, etc.)
+shell-integration = detect

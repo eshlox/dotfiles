@@ -1,49 +1,83 @@
-# Set history size to 1 million commands
-HISTSIZE=1000000
-SAVEHIST=1000000
+# =============================================================================
+# Philosophy: zsh ships with no useful defaults — every line below earns its
+# place. Comments explain why each block exists.
+# =============================================================================
 
-# Ignore duplicate commands
-setopt HIST_IGNORE_DUPS
-setopt HIST_IGNORE_ALL_DUPS
 
-# Include a timestamp in the history file
-setopt EXTENDED_HISTORY
+# -----------------------------------------------------------------------------
+# History — without these, zsh doesn't persist history at all
+# -----------------------------------------------------------------------------
+HISTFILE="$HOME/.zsh_history"      # explicit path; many distros set this in /etc/zshrc but not all
+HISTSIZE=1000000                   # in-memory history entries
+SAVEHIST=1000000                   # entries written to $HISTFILE on exit
+setopt HIST_IGNORE_ALL_DUPS        # drop older duplicates anywhere in history (superset of HIST_IGNORE_DUPS)
+setopt EXTENDED_HISTORY            # write `:start:elapsed;cmd` so each entry has a timestamp
 
-source <(fzf --zsh)
-eval "$(starship init zsh)"
 
+# -----------------------------------------------------------------------------
+# Tools — initialize installed CLI tools
+# -----------------------------------------------------------------------------
+source <(fzf --zsh)                # fzf keybinds: Ctrl-R history, Ctrl-T files, Alt-C cd
+eval "$(starship init zsh)"        # replace the bare `%` prompt with starship
+
+# fzf defaults to dark colors that wash out on a light terminal — `light` preset
+# inherits the terminal's 16 ANSI colors, so it tracks the Ghostty theme.
+export FZF_DEFAULT_OPTS='--color=light --height=40% --layout=reverse --border'
+
+
+# -----------------------------------------------------------------------------
+# Completion — without compinit, tab completion does nothing
+# -----------------------------------------------------------------------------
 autoload -Uz compinit
 compinit
 
-export PATH="$HOME/.local/bin:$PATH"
-export XDG_CONFIG_HOME="$HOME/.config"
 
-export EDITOR="hx"
-export VISUAL="hx"
+# -----------------------------------------------------------------------------
+# Environment
+# -----------------------------------------------------------------------------
+export PATH="$HOME/.local/bin:$PATH"   # ~/.local/bin holds personal scripts (e.g. ai-commit)
+export EDITOR="hx"                     # used by git commit, crontab -e, etc.
+export VISUAL="hx"                     # used by tools that prefer the "visual" editor
 
-t() { tmux new-window -n "${1:-shell}"; }
+
+# -----------------------------------------------------------------------------
+# Tmux helpers
+# -----------------------------------------------------------------------------
+# `t [name]`  → new window in the current tmux session (default name: "shell")
+t()  { tmux new-window -n "${1:-shell}"; }
+
+# `ts [name]` → attach to session "name" (default "main"), creating it if missing
 ts() { tmux new-session -A -s "${1:-main}"; }
 
-# Auto-attach tmux on SSH (Lima `lima shell` counts as SSH) so it acts as the default shell
+# Auto-attach tmux on SSH so it acts as the default shell.
+# Lima's `lima shell` sets SSH_CONNECTION too, so this triggers there as well.
 if command -v tmux &>/dev/null && [ -z "$TMUX" ] && [ -n "$SSH_CONNECTION" ]; then
   exec tmux new-session -A -s main
 fi
 
-# Claude-style just wrapper: tmux window naming + global fallback + merged --choose
-# Project justfiles stay untouched; teammates without this function get plain `just`.
+
+# -----------------------------------------------------------------------------
+# `just` wrapper — adds three things on top of plain `just`:
+#   1. Falls back to the global justfile (~/.config/just/justfile) when the
+#      project doesn't define a recipe.
+#   2. Renames the tmux window to the recipe name while it runs.
+#   3. `--choose` shows project + global recipes in one fuzzy picker.
+# Project justfiles are untouched; teammates without this function get plain
+# `just`. Keep it identical to `just`'s CLI surface.
+# -----------------------------------------------------------------------------
 just() {
   local global_justfile="${XDG_CONFIG_HOME:-$HOME/.config}/just/justfile"
 
-  # Is there a project justfile at/above $PWD?
+  # Detect whether $PWD (or any ancestor) has a project justfile.
   local in_project=0
   command just --show default &>/dev/null && in_project=1
-  # Fallback probe: `just --show` returns non-zero when no recipe named "default" exists
-  # but the justfile itself is fine. Use --summary which works as long as a justfile is found.
+  # Fallback: --show fails if there's no recipe named "default" but a justfile
+  # may still exist; --summary succeeds whenever any justfile is found.
   if (( ! in_project )); then
     command just --summary &>/dev/null && in_project=1
   fi
 
-  # --choose: merged fuzzy picker
+  # `--choose`: merged fuzzy picker over project + global recipes
   if [[ "$1" == "--choose" ]]; then
     local chooser="${JUST_CHOOSER:-fzf --ansi}"
     local project_list="" global_list="" selected
@@ -55,7 +89,7 @@ just() {
       global_list=$(command just -g --summary 2>/dev/null | tr ' ' '\n' | grep -v '^$')
     fi
 
-    # Dedupe: project wins when names collide; dim prefix marks globals
+    # Dedupe: project recipes win when names collide; dim ∘ marks globals.
     selected=$(
       {
         [[ -n "$project_list" ]] && while IFS= read -r r; do
@@ -75,7 +109,7 @@ just() {
     return
   fi
 
-  # First non-flag argument = recipe name
+  # First non-flag argument is the recipe name (used for window renaming + global fallback).
   local recipe=""
   for arg in "$@"; do
     [[ "$arg" == -* ]] && continue
@@ -83,7 +117,7 @@ just() {
     break
   done
 
-  # --list / -l: project (if any) + globals
+  # `--list` / `-l`: show project recipes (if any) followed by globals.
   if [[ "$1" == "--list" || "$1" == "-l" ]]; then
     if (( in_project )); then
       command just "$@"
@@ -96,13 +130,14 @@ just() {
     return
   fi
 
-  # Bare `just` with no args outside a project: show globals instead of erroring
+  # Bare `just` outside any project: show globals instead of erroring.
   if [[ $# -eq 0 ]] && (( ! in_project )) && [[ -f "$global_justfile" ]]; then
     command just -g
     return
   fi
 
-  # If recipe is missing from the project (or no project exists) but exists globally, delegate
+  # If the recipe doesn't exist in the project but exists globally, run the
+  # global one but with --working-directory $PWD so it acts on the current dir.
   local -a prefix=(command just)
   if [[ -n "$recipe" ]] \
     && [[ -f "$global_justfile" ]] \
@@ -111,7 +146,7 @@ just() {
     prefix=(command just --justfile "$global_justfile" --working-directory "$PWD")
   fi
 
-  # tmux window naming
+  # Rename the tmux window to the recipe while it runs, then back to "zsh".
   if [[ -n "$TMUX" ]] && [[ -n "$recipe" ]]; then
     tmux rename-window "$recipe"
     "${prefix[@]}" "$@"
@@ -123,10 +158,13 @@ just() {
   "${prefix[@]}" "$@"
 }
 
-alias j="just --choose"
+alias j="just --choose"            # quick fuzzy picker
 {{ if eq .role "vm" }}
+
+# -----------------------------------------------------------------------------
+# Lima VM only (chezmoi role=vm) — ensures iptables / mount.fuse3 are in PATH
+# -----------------------------------------------------------------------------
 # Lima BEGIN
-# Make sure iptables and mount.fuse3 are available
 PATH="$PATH:/usr/sbin:/sbin"
 export PATH
 # Lima END

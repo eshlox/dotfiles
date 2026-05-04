@@ -1,18 +1,19 @@
-# Show available global recipes
+# Global justfile — populates `j` (fuzzy `just --choose`) with launchers.
+# These recipes are deliberately trivial; the value is having a single picker
+# accessible from any directory, not the wrappers themselves.
+
+# `just` (no args) opens the fuzzy picker
 default:
     @just --choose
 
-# Open lazygit in the current directory
+# Open lazygit in $PWD
 lazygit:
     lazygit
 
-# Open Helix in the current directory (args forwarded to hx)
+# Open Helix in $PWD (forwards args, e.g. `just hx README.md`)
 hx *args:
     hx {{args}}
 
-# Alias: `just helix` instead of `just hx`
-helix *args: (hx args)
-
-# Open Yazi (file manager)
+# Open Yazi (terminal file manager) in $PWD
 yazi:
     yazi
