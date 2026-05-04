@@ -3,9 +3,9 @@
 # (Helix, lazygit, tmux, fzf, delta, bat) inherits the 16 ANSI colors set here.
 # Theme everything ONCE here, leave other tools on defaults.
 
-# Everforest Light Soft — warm, low-contrast, designed for long sessions.
+# Rosé Pine Dawn — soft pastel light theme (cream bg, dusty rose/teal/iris).
 # To browse alternatives:  ghostty +list-themes | grep -i light
-theme = Everforest Light - Soft
+theme = Rosé Pine Dawn
 
 # Font — adjust family/size to taste; these are sane defaults.
 font-family = JetBrainsMono Nerd Font
