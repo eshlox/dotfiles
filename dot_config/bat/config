@@ -1,10 +1,11 @@
 # bat (better cat) — config applies whenever you actually install/use it.
 # Bat reads this file from $XDG_CONFIG_HOME/bat/config automatically.
 
-# Light syntax theme — neutral & low-contrast to sit well next to Rosé Pine Dawn.
-# (Bat doesn't ship a Rosé Pine theme; OneHalfLight is the closest neutral.)
-# To list alternatives:  bat --list-themes
---theme="OneHalfLight"
+# Catppuccin Latte syntax theme — palette file is at
+# ~/.config/bat/themes/Catppuccin Latte.tmTheme.
+# After first deploy run once:  bat cache --build
+# To list themes:  bat --list-themes
+--theme="Catppuccin Latte"
 
 # Show line numbers + git change markers + the file header, but not the
 # fancy unicode grid (which doubles vertical space). Defaults are noisier.

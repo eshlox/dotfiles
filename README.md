@@ -36,7 +36,15 @@ chezmoi edit-config
 # 4. Preview, then apply
 chezmoi diff
 chezmoi apply
+
+# 5. Register the Catppuccin Latte theme with bat (and delta)
+bat cache --build
 ```
+
+The bat cache step picks up `~/.config/bat/themes/Catppuccin Latte.tmTheme`,
+which both `bat` and `delta` (via syntect) then resolve when configured with
+`syntax-theme = "Catppuccin Latte"`. Re-run `bat cache --build` whenever the
+`.tmTheme` file changes.
 
 ## First-time setup on the macOS host (Ghostty only)
 

@@ -1,7 +1,7 @@
 # Philosophy: keep Helix defaults, only add what's missing or fix preferences.
 # Each line that overrides a default has a comment showing the default.
 
-theme = "rose_pine_dawn"               # ships with Helix — matches the Ghostty terminal theme
+theme = "catppuccin_latte"             # ships with Helix — matches the Ghostty terminal theme
 
 [editor]
 line-number = "relative"               # default "absolute" — vim-style relative numbers
