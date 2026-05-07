@@ -11,7 +11,7 @@ Two deployment profiles, selected by the chezmoi data field `role`:
 | unset         | macOS host    | **only** `.config/ghostty`                   |
 
 The split exists because Ghostty (the terminal) runs on the host, while every
-other tool (zsh, tmux, helix, lazygit, etc.) runs inside the VM. The selection
+other tool (zsh, zellij, helix, lazygit, etc.) runs inside the VM. The selection
 is implemented in `.chezmoiignore` as a template.
 
 Identity (name, email) is **never stored in this repo**. It lives in each
@@ -22,10 +22,13 @@ source tree.
 
 ```bash
 # 1. Install required packages
-sudo dnf install -y zsh tmux helix lazygit fzf git-delta jq just yazi \
+sudo dnf install -y zsh helix lazygit fzf git-delta jq just yazi \
                     chezmoi starship bat
 # `ghostty` is the terminal — install it from your host package manager
 # (https://ghostty.org/) since it runs outside the VM.
+# `zellij` isn't packaged for Fedora — grab the latest release tarball from
+# https://github.com/zellij-org/zellij/releases and drop the binary at
+# /usr/local/bin/zellij.
 
 # 2. Pull dotfiles into chezmoi's source dir
 chezmoi init https://github.com/<user>/dotfiles.git
@@ -223,7 +226,7 @@ chezmoi edit-config             # edit ~/.config/chezmoi/chezmoi.toml
 | `.config/helix/languages.toml`         | per-language formatters                          |
 | `.config/just/justfile`                | global recipes (lazygit/hx/yazi)                 |
 | `.config/lazygit/config.yml`           | lazygit + AI-commit keybinding (`G`)             |
-| `.config/tmux/tmux.conf`               | tmux                                             |
+| `.config/zellij/config.kdl`            | zellij multiplexer                               |
 | `.config/bat/config`                   | bat (better cat) — light theme                   |
 | `.config/starship.toml`                | starship prompt — minimal preset                 |
 | `.local/bin/ai-commit`                 | local LLM commit-message generator               |

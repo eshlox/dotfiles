@@ -41,25 +41,15 @@ export VISUAL="hx"                     # used by tools that prefer the "visual" 
 
 
 # -----------------------------------------------------------------------------
-# Tmux helpers
+# Zellij helpers + auto-start
 # -----------------------------------------------------------------------------
-# `t [name]`  → new window in the current tmux session (default name: "shell")
-t()  { tmux new-window -n "${1:-shell}"; }
+# `t [name]`  → new tab in the current zellij session (default name: "shell")
+t()  { zellij action new-tab --name "${1:-shell}"; }
 
 # `ts [name]` → attach to session "name" (default "main"), creating it if missing
-ts() { tmux new-session -A -s "${1:-main}"; }
+ts() { zellij attach -c "${1:-main}"; }
 
-# Auto-attach tmux on SSH so it acts as the default shell.
-# Lima's `lima shell` sets SSH_CONNECTION too, so this triggers there as well.
-# TEMPORARILY DISABLED — trialling zellij below. Uncomment to switch back.
-# if command -v tmux &>/dev/null && [ -z "$TMUX" ] && [ -n "$SSH_CONNECTION" ]; then
-#   exec tmux new-session -A -s main
-# fi
-
-
-# -----------------------------------------------------------------------------
-# Zellij — auto-start on interactive shells (trial replacement for tmux)
-# -----------------------------------------------------------------------------
+# Auto-start zellij on every interactive shell so it acts as the default shell.
 eval "$(zellij setup --generate-auto-start zsh)"
 
 
@@ -67,7 +57,7 @@ eval "$(zellij setup --generate-auto-start zsh)"
 # `just` wrapper — adds three things on top of plain `just`:
 #   1. Falls back to the global justfile (~/.config/just/justfile) when the
 #      project doesn't define a recipe.
-#   2. Renames the tmux window to the recipe name while it runs.
+#   2. Renames the zellij tab to the recipe name while it runs.
 #   3. `--choose` shows project + global recipes in one fuzzy picker.
 # Project justfiles are untouched; teammates without this function get plain
 # `just`. Keep it identical to `just`'s CLI surface.
@@ -153,12 +143,12 @@ just() {
     prefix=(command just --justfile "$global_justfile" --working-directory "$PWD")
   fi
 
-  # Rename the tmux window to the recipe while it runs, then back to "zsh".
-  if [[ -n "$TMUX" ]] && [[ -n "$recipe" ]]; then
-    tmux rename-window "$recipe"
+  # Rename the zellij tab to the recipe while it runs, then revert to default.
+  if [[ -n "$ZELLIJ" ]] && [[ -n "$recipe" ]]; then
+    zellij action rename-tab "$recipe"
     "${prefix[@]}" "$@"
     local exit_code=$?
-    tmux rename-window "zsh"
+    zellij action undo-rename-tab
     return $exit_code
   fi
 

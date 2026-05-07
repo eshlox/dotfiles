@@ -1,6 +1,6 @@
 # Ghostty terminal config.
 # This file defines the foundational palette: every TUI inside the terminal
-# (Helix, lazygit, tmux, fzf, delta, bat) inherits the 16 ANSI colors set here.
+# (Helix, lazygit, zellij, fzf, delta, bat) inherits the 16 ANSI colors set here.
 # Theme everything ONCE here, leave other tools on defaults.
 
 # Catppuccin — auto-switch between Mocha (dark) and Latte (light) variants
@@ -16,7 +16,7 @@ font-size   = 14
 audible-bell = false
 visual-bell  = false
 
-# Hide the macOS title bar; tmux/starship already show context
+# Hide the macOS title bar; zellij/starship already show context
 window-decoration = false
 
 # Padding around the content; easier on the eyes than flush edges
