@@ -41,16 +41,15 @@ export VISUAL="hx"                     # used by tools that prefer the "visual" 
 
 
 # -----------------------------------------------------------------------------
-# Zellij helpers + auto-start
+# Zellij auto-start
 # -----------------------------------------------------------------------------
-# `t [name]`  → new tab in the current zellij session (default name: "shell")
-t()  { zellij action new-tab --name "${1:-shell}"; }
-
-# `ts [name]` → attach to session "name" (default "main"), creating it if missing
-ts() { zellij attach -c "${1:-main}"; }
-
 # Auto-start zellij on every interactive shell so it acts as the default shell.
-eval "$(zellij setup --generate-auto-start zsh)"
+# Use the hostname as the session name so the tab bar shows which VM you're on
+# (Lima VMs are otherwise indistinguishable). Equivalent to `zellij setup
+# --generate-auto-start zsh` with an explicit session name.
+if [[ -z "$ZELLIJ" ]]; then
+  exec zellij attach -c "$(hostname)"
+fi
 
 
 # -----------------------------------------------------------------------------
