@@ -22,4 +22,5 @@
 .config/lazygit
 .config/starship.toml
 .config/tmux
+.config/zellij
 {{- end }}

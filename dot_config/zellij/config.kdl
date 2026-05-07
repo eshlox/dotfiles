@@ -1,0 +1,7 @@
+// =============================================================================
+// Philosophy: keep zellij defaults, only override what's needed.
+// =============================================================================
+
+// Match the Catppuccin Latte palette already used by Helix and bat.
+// Built-in zellij theme — no extra theme files required.
+theme "catppuccin-latte"

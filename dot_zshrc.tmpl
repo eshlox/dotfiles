@@ -51,9 +51,16 @@ ts() { tmux new-session -A -s "${1:-main}"; }
 
 # Auto-attach tmux on SSH so it acts as the default shell.
 # Lima's `lima shell` sets SSH_CONNECTION too, so this triggers there as well.
-if command -v tmux &>/dev/null && [ -z "$TMUX" ] && [ -n "$SSH_CONNECTION" ]; then
-  exec tmux new-session -A -s main
-fi
+# TEMPORARILY DISABLED — trialling zellij below. Uncomment to switch back.
+# if command -v tmux &>/dev/null && [ -z "$TMUX" ] && [ -n "$SSH_CONNECTION" ]; then
+#   exec tmux new-session -A -s main
+# fi
+
+
+# -----------------------------------------------------------------------------
+# Zellij — auto-start on interactive shells (trial replacement for tmux)
+# -----------------------------------------------------------------------------
+eval "$(zellij setup --generate-auto-start zsh)"
 
 
 # -----------------------------------------------------------------------------
