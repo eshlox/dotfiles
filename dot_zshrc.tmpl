@@ -5,6 +5,16 @@
 
 
 # -----------------------------------------------------------------------------
+# TERM fixup — must run before anything that reads terminfo (fzf, starship,
+# zellij below all do)
+# -----------------------------------------------------------------------------
+# Ghostty advertises xterm-ghostty, which Fedora guests lack terminfo for.
+if [[ "${TERM:-}" == "xterm-ghostty" ]]; then
+  export TERM=xterm-256color
+fi
+
+
+# -----------------------------------------------------------------------------
 # History — without these, zsh doesn't persist history at all
 # -----------------------------------------------------------------------------
 HISTFILE="$HOME/.zsh_history"      # explicit path; many distros set this in /etc/zshrc but not all
@@ -155,6 +165,10 @@ just() {
 }
 
 alias j="just --choose"            # quick fuzzy picker
+
+# `cf [port]` helper: expose this VM at the tunnel hostname (default :3000).
+# Foreground run = exactly one connector live; Ctrl-C to stop, then switch VMs.
+cf() { cloudflared tunnel --url "http://localhost:${1:-3000}" run; }
 {{ if eq .role "vm" }}
 
 # -----------------------------------------------------------------------------

@@ -17,3 +17,13 @@ hx *args:
 # Open Yazi (terminal file manager) in $PWD
 yazi:
     yazi
+
+# Create the tunnel once in any VM that has cloudflared, then put the real UUID into setup.sh
+tunnel-login:
+    cloudflared tunnel login                    # browser auth -> cert.pem
+
+tunnel-create:
+    cloudflared tunnel create eshlox            # prints the UUID; writes <uuid>.json
+
+tunnel-route:
+    cloudflared tunnel route dns eshlox localhost.eshlox.net
