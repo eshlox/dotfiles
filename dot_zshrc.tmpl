@@ -29,6 +29,7 @@ setopt EXTENDED_HISTORY            # write `:start:elapsed;cmd` so each entry ha
 # -----------------------------------------------------------------------------
 source <(fzf --zsh)                # fzf keybinds: Ctrl-R history, Ctrl-T files, Alt-C cd
 eval "$(starship init zsh)"        # replace the bare `%` prompt with starship
+eval "$(fnm env --use-on-cd --shell zsh)"  # fnm: per-dir Node version, auto-switch on cd
 
 # fzf defaults to dark colors that wash out on a light terminal — `light` preset
 # inherits the terminal's 16 ANSI colors, so it tracks the Ghostty theme.
